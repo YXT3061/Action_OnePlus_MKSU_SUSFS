@@ -1,5 +1,4 @@
-name: 1.构建一加内核(KPM+SUSFS+VFS+LZ4KD+++SUSFS CI模块+修改内核名称)(♢
-)
+name: 1.构建一加内核(KPM+SUSFS+VFS+LZ4KD+++SUSFS CI模块+修改内核名称)(♢)
 on:
   workflow_dispatch:
     inputs:
