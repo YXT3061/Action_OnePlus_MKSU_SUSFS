@@ -8,12 +8,14 @@ on:
         required: true
         default: 'YXT3061/Action_OnePlus_MKSU_SUSFS--YXT'
       workflow_name:
+        type: choice
         description: '清理的工作流名称'
         required: true
         default: '1.构建一加内核(KPM+SUSFS+VFS+LZ4KD+++SUSFS CI模块+修改内核名称)(♢)'
         options:
           - Build-SukiSU
           - 1.构建一加内核(KPM+SUSFS+VFS+LZ4KD+++SUSFS CI模块+修改内核名称)(♢)
+
       count:
         description: '检查的最多运行次数'
         required: false
