@@ -89,7 +89,7 @@ on:
 
       VFS:
         type: boolean
-        description: "是否启用手动钩子？"
+        description: "是否启用手动(VFS)钩子？"
         required: true
         default: true
       KPM:
