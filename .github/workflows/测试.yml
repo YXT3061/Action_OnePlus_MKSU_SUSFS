@@ -82,11 +82,10 @@ on:
         options:
           - gki
           - perf
-      SUSFS_CI:
-        type: boolean
-        description: "下载SUSFS模块是否使用CI构建？"
+      KERNEL_NAME:
+        description: "修改内核名称"
         required: true
-        default: true
+        default: '-android13-8-o-gf432b70a3ea2-YXT'
       VFS:
         type: boolean
         description: "是否启用手动钩子(VFS)？"
@@ -332,6 +331,14 @@ jobs:
             fi
           fi
 
+      - name: Add make name
+        run: |
+         cd kernel_workspace/kernel_platform
+           if [[ "${{ github.event.inputs.KERNEL_VERSION }}" == "6.1" || "${{ github.event.inputs.KERNEL_VERSION }}" == "6.6" ]]; then
+             sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
+           fi
+           sed -i '$s|echo "\$res"|echo "\${{ github.event.inputs.KERNEL_NAME }}"|' ./common/scripts/setlocalversion
+  
       - name: Build kernel
         if: ${{ github.event.inputs.CPU == 'sm8650' || github.event.inputs.CPU == 'sm7675' }}
         run: |
@@ -415,7 +422,7 @@ jobs:
 
       # 下载 SUSFS 模块（CI）
       - name: Download Latest SUSFS Module from CI
-        if: ${{ github.event.inputs.SUSFS_CI == 'true' }}
+      #  if: ${{ github.event.inputs.SUSFS_CI == 'true' }}
         run: |
           LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
@@ -433,11 +440,11 @@ jobs:
           cp ksu_module_susfs.zip ./AnyKernel3/
 
       # 下载 SUSFS 模块（Release）
-      - name: Download Latest SUSFS Module from Release
-        if: ${{ github.event.inputs.SUSFS_CI == 'false' }}
-        run: |
-          wget https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
-          cp ksu_module_susfs_1.5.2+.zip ./AnyKernel3/
+      #- name: Download Latest SUSFS Module from Release
+      #  if: ${{ github.event.inputs.SUSFS_CI == 'false' }}
+      #  run: |
+      #    wget https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
+      #    cp ksu_module_susfs_1.5.2+.zip ./AnyKernel3/
 
       - name: Set suffix
         id: suffix
