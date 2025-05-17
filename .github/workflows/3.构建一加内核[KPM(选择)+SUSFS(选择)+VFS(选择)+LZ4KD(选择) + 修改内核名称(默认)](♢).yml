@@ -183,10 +183,11 @@ jobs:
             kernel_platform/common/scripts/setlocalversion \
             kernel_platform/msm-kernel/scripts/setlocalversion \
             kernel_platform/external/dtc/scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res-YXT"|" "$path"
+            sed -i "\$s|echo \"\\\$res\"|echo \"\$res-YXT\"|" "$path"
           done
           git add -A
-          git commit -m "Apply custom kernel suffix: $res-YXT"
+          git commit -m "Apply custom kernel suffix: YXT"
+
 
       # 添加 SukiSU Ultra
       - name: Add KernelSU-SukiSU Ultra
