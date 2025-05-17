@@ -1,4 +1,4 @@
-name: 2.构建一加内核(KPM+SUSFS+VFS+LZ4KD+++SUSFS CI模块+修改内核名称)(♢).yml
+name: 2.构建一加内核[KPM(选择)+SUSFS(release)+VFS(选择)+LZ4KD(选择) + 修改内核名称(自改)](♢)
 on:
   workflow_dispatch:
     inputs:
@@ -436,27 +436,27 @@ jobs:
           cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
 
       # 下载 SUSFS 模块（CI）
-      - name: Download Latest SUSFS Module from CI
-        if: ${{ github.event.inputs.SUSFS_CI == 'true' }}
-        run: |
-          LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
-            jq -r '.workflow_runs[] | select(.head_branch == "v1.5.2+") | .id' | head -n 1)
+      #- name: Download Latest SUSFS Module from CI
+      #  if: ${{ github.event.inputs.SUSFS_CI == 'true' }}
+      #  run: |
+      #    LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+      #      "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
+      #      jq -r '.workflow_runs[] | select(.head_branch == "v1.5.2+") | .id' | head -n 1)
 
-          if [ -z "$LATEST_RUN_ID" ]; then
-            echo "No successful run found for branch v1.5.2+"
-            exit 1
-          fi
+      #    if [ -z "$LATEST_RUN_ID" ]; then
+      #      echo "No successful run found for branch v1.5.2+"
+      #      exit 1
+      #    fi
 
-          ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs/$LATEST_RUN_ID/artifacts" | jq -r '.artifacts[0].archive_download_url')
+      #    ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+      #      "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs/$LATEST_RUN_ID/artifacts" | jq -r '.artifacts[0].archive_download_url')
 
-          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ksu_module_susfs_1.5.2+_CI.zip "$ARTIFACT_URL"
-          cp ksu_module_susfs_1.5.2+_CI.zip ./AnyKernel3/
+      #    curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ksu_module_susfs_1.5.2+_CI.zip "$ARTIFACT_URL"
+      #    cp ksu_module_susfs_1.5.2+_CI.zip ./AnyKernel3/
 
       # 下载 SUSFS 模块（Release）
       - name: Download Latest SUSFS Module from Release
-        if: ${{ github.event.inputs.SUSFS_CI == 'false' }}
+      #  if: ${{ github.event.inputs.SUSFS_CI == 'false' }}
         run: |
           wget -O ksu_module_susfs_1.5.2+_Release.zip https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
           cp ksu_module_susfs_1.5.2+_Release.zip ./AnyKernel3/
