@@ -83,11 +83,11 @@ on:
           - gki
           - perf
 
-      SUFFIX:
-        type: string
-        description: "自定义内核后缀 (留空则不修改)"
-        required: false
-        default: ""
+      #SUFFIX:
+      #  type: string
+      #  description: "自定义内核后缀 (留空则不修改)"
+      #  required: false
+      #  default: ""
 
       SUSFS_CI:
         type: boolean
@@ -183,14 +183,14 @@ jobs:
 
       # 自定义内核名
       - name: Modify setlocalversion suffix if suffix is set
-        if: ${{ github.event.inputs.SUFFIX != '' }}
+      #  if: ${{ github.event.inputs.SUFFIX != '' }}
         run: |
           cd kernel_workspace
           for path in \
             kernel_platform/common/scripts/setlocalversion \
             kernel_platform/msm-kernel/scripts/setlocalversion \
             kernel_platform/external/dtc/scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"\$res-${{ github.event.inputs.SUFFIX }}\"|" "$path"
+              sed -i "\$s|echo \"\\\$res\"|echo \"\$res-YXT"|" "$path"
           done
           git add -A
           git commit -m "Apply custom kernel suffix: ${{ github.event.inputs.SUFFIX }}"
