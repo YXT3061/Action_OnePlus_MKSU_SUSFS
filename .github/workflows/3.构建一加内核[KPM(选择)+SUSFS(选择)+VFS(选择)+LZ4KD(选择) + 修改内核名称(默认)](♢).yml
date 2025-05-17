@@ -1,4 +1,4 @@
-name: 测试2
+name: 3.构建一加内核[KPM(选择)+SUSFS(选择)+VFS(选择)+LZ4KD(选择) + 修改内核名称(默认)](♢)
 on:
   workflow_dispatch:
     inputs:
@@ -19,7 +19,7 @@ on:
         type: choice
         description: "配置文件"
         required: true
-        default: oneplus_11_v
+        default: oneplus_ace2pro_v
         options:
           - oneplus_nord_ce4_v
           - oneplus_ace_3v_v
@@ -82,11 +82,18 @@ on:
         options:
           - gki
           - perf
-      KERNEL_NAME:
-        description: "修改内核名称"
-        required: true
-        default: '-android13-8-o-gf432b70a3ea2-YXT'
 
+      SUFFIX:
+        type: string
+        description: "自定义内核后缀 (留空则不修改)"
+        required: false
+        default: ""
+
+      SUSFS_CI:
+        type: boolean
+        description: "下载SUSFS模块是否使用CI构建？"
+        required: true
+        default: true
       VFS:
         type: boolean
         description: "是否启用手动钩子(VFS)？"
@@ -137,6 +144,7 @@ jobs:
           echo "Selected ANDROID_VERSION: ${{ github.event.inputs.ANDROID_VERSION }}"
           echo "Selected KERNEL_VERSION: ${{ github.event.inputs.KERNEL_VERSION }}"
           echo "Selected BUILD_METHOD: ${{ github.event.inputs.BUILD_METHOD }}"
+          echo "Custom SUFFIX: ${{ github.event.inputs.SUFFIX }}"
           echo "Selected SUSFS_CI: ${{ github.event.inputs.SUSFS_CI }}"
           echo "Selected ZRAM: ${{ github.event.inputs.ZRAM }}"
           echo "Selected VFS: ${{ github.event.inputs.VFS }}"
@@ -172,6 +180,20 @@ jobs:
           sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' common/scripts/setlocalversion
           git add -A
           git commit -m "Force remove -dirty suffix from kernel version"
+
+      # 自定义内核名
+      - name: Modify setlocalversion suffix if suffix is set
+        if: ${{ github.event.inputs.SUFFIX != '' }}
+        run: |
+          cd kernel_workspace
+          for path in \
+            kernel_platform/common/scripts/setlocalversion \
+            kernel_platform/msm-kernel/scripts/setlocalversion \
+            kernel_platform/external/dtc/scripts/setlocalversion; do
+              sed -i "\$s|echo \"\\\$res\"|echo \"\$res-${{ github.event.inputs.SUFFIX }}\"|" "$path"
+          done
+          git add -A
+          git commit -m "Apply custom kernel suffix: ${{ github.event.inputs.SUFFIX }}"
 
       # 添加 SukiSU Ultra
       - name: Add KernelSU-SukiSU Ultra
@@ -234,6 +256,10 @@ jobs:
             echo "正在打lz4kd补丁"
             patch -p1 -F 3 < lz4kd.patch || true
             echo 'lz4kd_patch完成'
+            cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4k_oplus.patch ./
+            echo "正在打lz4k_oplus补丁"
+            patch -p1 -F 3 < lz4k_oplus.patch || true
+            echo 'lz4k_oplus_patch完成'
           fi
 
       # 配置信息
@@ -329,17 +355,11 @@ jobs:
               echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
               echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
               echo "CONFIG_CRYPTO_842=y" >> "$CONFIG_FILE"
+              echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
+              echo "CONFIG_ZRAM_WRITEBACK=y" >> "$CONFIG_FILE"
             fi
           fi
 
-      - name: Add make name
-        run: |
-         cd kernel_workspace/kernel_platform
-           if [[ "${{ github.event.inputs.KERNEL_VERSION }}" == "6.1" || "${{ github.event.inputs.KERNEL_VERSION }}" == "6.6" ]]; then
-             sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-           fi
-           sed -i '$s|echo "\$res"|echo "\${{ github.event.inputs.KERNEL_NAME }}"|' ./common/scripts/setlocalversion
-  
       - name: Build kernel
         if: ${{ github.event.inputs.CPU == 'sm8650' || github.event.inputs.CPU == 'sm7675' }}
         run: |
@@ -422,32 +442,32 @@ jobs:
           cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
 
       # 下载 SUSFS 模块（CI）
-      #- name: Download Latest SUSFS Module from CI
-      #  if: ${{ github.event.inputs.SUSFS_CI == 'true' }}
-      #  run: |
-      #    LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-      #      "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
-      #      jq -r '.workflow_runs[] | select(.head_branch == "v1.5.2+") | .id' | head -n 1)
+      - name: Download Latest SUSFS Module from CI
+        if: ${{ github.event.inputs.SUSFS_CI == 'true' }}
+        run: |
+          LATEST_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs?status=success" | \
+            jq -r '.workflow_runs[] | select(.head_branch == "v1.5.2+") | .id' | head -n 1)
 
-      #    if [ -z "$LATEST_RUN_ID" ]; then
-      #      echo "No successful run found for branch v1.5.2+"
-      #      exit 1
-      #    fi
+          if [ -z "$LATEST_RUN_ID" ]; then
+            echo "No successful run found for branch v1.5.2+"
+            exit 1
+          fi
 
-      #    ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-      #      "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs/$LATEST_RUN_ID/artifacts" | jq -r '.artifacts[0].archive_download_url')
+          ARTIFACT_URL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/sidex15/susfs4ksu-module/actions/runs/$LATEST_RUN_ID/artifacts" | jq -r '.artifacts[0].archive_download_url')
 
-      #    curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ksu_module_susfs_1.5.2+_CI.zip "$ARTIFACT_URL"
-      #    cp ksu_module_susfs_1.5.2+_CI.zip ./AnyKernel3/
+          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -o ksu_module_susfs_1.5.2+_CI.zip "$ARTIFACT_URL"
+          cp ksu_module_susfs_1.5.2+_CI.zip ./AnyKernel3/
 
       # 下载 SUSFS 模块（Release）
       - name: Download Latest SUSFS Module from Release
-      #  if: ${{ github.event.inputs.SUSFS_CI == 'false' }}
+        if: ${{ github.event.inputs.SUSFS_CI == 'false' }}
         run: |
           wget -O ksu_module_susfs_1.5.2+_Release.zip https://github.com/sidex15/ksu_module_susfs/releases/latest/download/ksu_module_susfs_1.5.2+.zip
           cp ksu_module_susfs_1.5.2+_Release.zip ./AnyKernel3/
 
-      - name: Set suffix
+      - name: Set zip suffix
         id: suffix
         run: |
           echo "value=${{ github.event.inputs.KPM == 'true' && '_KPM' || '' }}${{ github.event.inputs.VFS == 'true' && '_VFS' || '' }}${{ github.event.inputs.ZRAM == 'true' && '_LZ4KD' || '' }}" >> $GITHUB_OUTPUT
@@ -470,5 +490,5 @@ jobs:
       - name: Upload AnyKernel3
         uses: actions/upload-artifact@v4
         with:
-          name: AnyKernel3_SukiSUUltra_${{ env.KSUVER }}_${{ steps.feil_clean.outputs.value }}${{ steps.suffix.outputs.value }}
+          name: AnyKernel3_SukiSUUltra_${{ env.KSUVER }}_${{ steps.feil_clean.outputs.value }}_KPM${{ steps.suffix.outputs.value }}
           path: ./AnyKernel3/*
