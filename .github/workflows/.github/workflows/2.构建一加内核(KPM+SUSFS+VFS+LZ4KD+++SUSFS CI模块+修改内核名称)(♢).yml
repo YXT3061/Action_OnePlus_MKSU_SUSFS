@@ -84,7 +84,7 @@ on:
           - perf
       SUFFIX:
         type: string
-        description: "自定义内核后缀 (留空则不修改)"
+        description: "YXT"
         required: false
         default: ""
 
