@@ -186,7 +186,7 @@ jobs:
               sed -i "\$s|echo \"\\\$res-YXT"|" "$path"
           done
           git add -A
-          git commit -m "Apply custom kernel suffix: ${{ github.event.inputs.SUFFIX }}"
+          git commit -m "Apply custom kernel suffix: $res-YXT"
 
       # 添加 SukiSU Ultra
       - name: Add KernelSU-SukiSU Ultra
